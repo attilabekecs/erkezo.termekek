@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+const isGitHubPagesBuild = process.env.GITHUB_PAGES === "true";
+const repositoryName =
+  process.env.GITHUB_REPOSITORY?.split("/").at(-1) ?? "erkezo.termekek";
+const publicBasePath = isGitHubPagesBuild ? `/${repositoryName}` : "";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -15,12 +20,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Érkező termékek összesítő",
   description: "Beillesztett terméklisták kategóriánkénti összesítése és Excel-exportja.",
-  other: {
-    "codex-preview": "development",
-  },
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: `${publicBasePath}/favicon.svg`,
+    shortcut: `${publicBasePath}/favicon.svg`,
   },
 };
 

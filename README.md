@@ -36,6 +36,21 @@ npm run lint
 npm run build
 ```
 
+## Nyilvános oldal
+
+Az alkalmazás itt érhető el:
+
+<https://attilabekecs.github.io/erkezo.termekek/>
+
+A `.github/workflows/deploy-pages.yml` workflow a `main` ág minden frissítésekor
+elkészíti a statikus Next.js buildet, majd automatikusan publikálja GitHub Pagesre.
+
+Helyi Pages build:
+
+```bash
+npm run build:pages
+```
+
 ## GitHub feltöltés
 
 1. Csomagold ki a ZIP-fájlt.
