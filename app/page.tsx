@@ -23,6 +23,7 @@ const CATEGORIES = [
 
 type Result = { category: string; quantity: number };
 type Unknown = { row: number; name: string; quantity: number; reason: string };
+type ReviewedItem = { row: number; name: string; quantity: number; category: string | null; mappingKey: string };
 
 const clean = (value: string) => value.toLowerCase().replace(/[‐‑–—]/g, "-").replace(/[()]/g, " ").replace(/\s+/g, " ").trim();
 const samsungCategory = (category: string) => category.startsWith("Galaxy ") ? `Samsung ${category}` : category;
@@ -140,7 +141,7 @@ function parseLine(line: string): { name: string; quantity: number } | null {
 export default function Home() {
   const [input, setInput] = useState("");
   const [processed, setProcessed] = useState(false);
-  const [activeTab, setActiveTab] = useState<"summary" | "unknown">("summary");
+  const [activeTab, setActiveTab] = useState<"summary" | "all" | "unknown">("summary");
   const [customMappings, setCustomMappings] = useState<Record<string, string>>({});
   const [assignments, setAssignments] = useState<Record<string, string>>({});
 
@@ -158,19 +159,22 @@ export default function Home() {
   const parsed = useMemo(() => {
     const totals = new Map<string, number>();
     const unknown: Unknown[] = [];
+    const items: ReviewedItem[] = [];
     let validRows = 0;
     let units = 0;
     input.split(/\r?\n/).forEach((line, index) => {
       const item = parseLine(line);
       if (!item) return;
       validRows += 1; units += item.quantity;
-      const category = classify(item.name) ?? customMappings[clean(item.name)];
+      const mappingKey = clean(item.name);
+      const category = assignments[mappingKey] || customMappings[mappingKey] || classify(item.name);
+      items.push({ ...item, row: index + 1, category, mappingKey });
       if (category) totals.set(category, (totals.get(category) ?? 0) + item.quantity);
       else unknown.push({ ...item, row: index + 1, reason: "Nem található egyező kategória" });
     });
     const results: Result[] = CATEGORIES.filter(c => totals.has(c)).map(category => ({ category, quantity: totals.get(category)! }));
-    return { results, unknown, validRows, units };
-  }, [input, customMappings]);
+    return { results, unknown, items, validRows, units };
+  }, [input, customMappings, assignments]);
 
   const saveAssignments = () => {
     const selected = Object.entries(assignments).filter(([, category]) => category);
@@ -234,6 +238,7 @@ export default function Home() {
             <>
               <div className="tabs" role="tablist" aria-label="Feldolgozási eredmények">
                 <button className={activeTab === "summary" ? "active" : ""} onClick={() => setActiveTab("summary")} role="tab">Összesítés <b>{parsed.results.length}</b></button>
+                <button className={activeTab === "all" ? "active" : ""} onClick={() => setActiveTab("all")} role="tab">Összes tétel <b>{parsed.items.length}</b></button>
                 <button className={activeTab === "unknown" ? "active warning" : "warning"} onClick={() => setActiveTab("unknown")} role="tab">Nem felismert <b>{parsed.unknown.length}</b></button>
               </div>
               {activeTab === "summary" ? <div className="tabContent">
@@ -242,11 +247,17 @@ export default function Home() {
                   {parsed.results.map(item => <div className="resultRow" key={item.category}><span>{item.category}</span><b>{item.quantity} <small>db</small></b></div>)}
                   {!parsed.results.length && <p className="noResult">Nem találtam felismerhető kategóriát.</p>}
                 </div>
+              </div> : activeTab === "all" ? <div className="tabContent unknownTab">
+                <div className="mappingIntro"><div><b>Összes tétel kategorizálása</b><span>Itt minden bemásolt készüléknél ellenőrizheted és módosíthatod a felismert kategóriát. A módosítás az összesítésben azonnal megjelenik.</span></div><button onClick={saveAssignments} disabled={!Object.values(assignments).some(Boolean)}>Módosítások mentése</button></div>
+                <div className="unknownHeader"><span>SOR</span><span>EREDETI TERMÉKNÉV</span><span>DB</span><span>KATEGÓRIA</span></div>
+                <div className="unknownList">
+                  {parsed.items.map((item, i) => <div className="unknownRow" key={`${item.name}-${i}`}><span>{item.row}.</span><strong>{item.name}</strong><b>{item.quantity}</b><select aria-label={`${item.name} kategóriája`} value={item.category ?? ""} onChange={e => setAssignments(current => ({ ...current, [item.mappingKey]: e.target.value }))}><option value="">Nincs kategória</option>{CATEGORIES.map(category => <option key={category} value={category}>{category}</option>)}</select></div>)}
+                </div>
               </div> : <div className="tabContent unknownTab">
                 <div className="mappingIntro"><div><b>Nem egyező termékek besorolása</b><span>Válaszd ki a megfelelő kategóriát. A böngésző megjegyzi a döntést a következő alkalomra is.</span></div><button onClick={saveAssignments} disabled={!Object.values(assignments).some(Boolean)}>Besorolások mentése</button></div>
                 <div className="unknownHeader"><span>SOR</span><span>EREDETI TERMÉKNÉV</span><span>DB</span><span>KATEGÓRIA</span></div>
                 <div className="unknownList">
-                  {parsed.unknown.map((u, i) => { const mappingKey = clean(u.name); return <div className="unknownRow" key={`${u.name}-${i}`}><span>{u.row}.</span><strong>{u.name}</strong><b>{u.quantity}</b><select aria-label={`${u.name} kategóriája`} value={assignments[mappingKey] ?? ""} onChange={e => setAssignments(current => ({ ...current, [mappingKey]: e.target.value }))}><option value="">Kategória kiválasztása…</option>{CATEGORIES.map(category => <option key={category} value={category}>{category}</option>)}</select></div>})}
+                  {parsed.unknown.map((u, i) => { const mappingKey = clean(u.name); return <div className="unknownRow" key={`${u.name}-${i}`}><span>{u.row}.</span><strong>{u.name}</strong><b>{u.quantity}</b><select aria-label={`${u.name} kategóriája`} value={assignments[mappingKey] ?? customMappings[mappingKey] ?? ""} onChange={e => setAssignments(current => ({ ...current, [mappingKey]: e.target.value }))}><option value="">Kategória kiválasztása…</option>{CATEGORIES.map(category => <option key={category} value={category}>{category}</option>)}</select></div>})}
                   {!parsed.unknown.length && <div className="allKnown"><span>✓</span><b>Minden tételt felismertem.</b></div>}
                 </div>
               </div>}
