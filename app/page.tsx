@@ -43,14 +43,15 @@ function classify(raw: string): string | null {
     if (has(/\bmini\b/)) return `iPhone ${model} Mini`;
     return `iPhone ${model}`;
   }
+  if (has(/iphone\s*6\s*s\b|iphone\s*6s\b/)) return "iPhone 6s";
   for (const model of [8, 7, 6]) {
-    if (has(new RegExp(`iphone\\s*${model}(?!\\d)`))) return has(/\bplus\b/) ? `iPhone ${model} Plus` : `iPhone ${model}`;
+    const pattern = model === 6 ? /iphone\s*6(?!\s*s\b|s\b|\d)/ : new RegExp(`iphone\\s*${model}(?!\\d)`);
+    if (has(pattern)) return has(/\bplus\b/) ? `iPhone ${model} Plus` : `iPhone ${model}`;
   }
   if (has(/iphone\s*xs\s*max/)) return "iPhone XS Max";
   if (has(/iphone\s*xs\b/)) return "iPhone XS";
   if (has(/iphone\s*xr\b/)) return "iPhone XR";
   if (has(/iphone\s*x\b/)) return "iPhone X";
-  if (has(/iphone\s*6s\b/)) return "iPhone 6s";
 
   if (has(/ipad\s*pro/)) {
     if (has(/9[.,]7|2016/)) return "Apple iPad Pro 9.7 2016";
@@ -105,7 +106,7 @@ function classify(raw: string): string | null {
     for (const n of [4, 3, 2]) if (has(new RegExp(`airpods\\s*${n}|airpods.*${n}(?:nd|rd|th)\\s*gen`))) return `Airpods ${n}`;
     return "Airpods";
   }
-  if (has(/galaxy\s*xcover/)) return "Samsung Galaxy XCover";
+  if (has(/(?:samsung\s*)?galaxy\s*xcover\s*\d*/)) return "Samsung Galaxy XCover";
   if (has(/galaxy\s*note/)) return "Samsung Galaxy Note";
   if (has(/galaxy\s*z\b/)) return "Samsung Galaxy Z";
   if (has(/galaxy\s*a\s*\d|samsung\s*a\s*\d|\bsm-a\d/)) return "Samsung Galaxy A";
