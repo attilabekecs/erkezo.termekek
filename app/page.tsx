@@ -56,21 +56,28 @@ function classify(raw: string): string | null {
     if (has(/9[.,]7|2016/)) return "Apple iPad Pro 9.7 2016";
     if (has(/10[.,]5/)) return "iPad Pro 10.5";
     for (const y of [2022, 2021, 2020, 2018, 2017, 2015]) if (has(new RegExp(`\\b${y}\\b`))) return `iPad Pro ${y}`;
-    const gen = s.match(/(?:ipad\s*pro.*?)([1-6])(?:st|nd|rd|th)?\s*(?:gen|generation)/)?.[1];
+    const gen = s.match(/ipad\s*pro.*?\b([1-6])(?:st|nd|rd|th)?\s*(?:gen|generation)\b/)?.[1];
     const map: Record<string, string> = { "1": "iPad Pro 2015", "2": "iPad Pro 2017", "3": "iPad Pro 2018", "4": "iPad Pro 2020", "5": "iPad Pro 2021", "6": "iPad Pro 2022" };
     return gen ? map[gen] : null;
   }
   if (has(/ipad\s*air/)) {
-    const m = s.match(/ipad\s*air\s*(?:\(|-|\s)*(\d)/)?.[1];
-    return m && +m >= 2 && +m <= 5 ? `iPad Air ${m}` : "iPad Air";
+    const gen = s.match(/ipad\s*air.*?\b([1-5])(?:st|nd|rd|th)?\s*(?:gen|generation)\b/)?.[1];
+    if (gen) return gen === "1" ? "iPad Air" : `iPad Air ${gen}`;
+    const direct = s.match(/ipad\s*air\s*(?:\(|-|\s)*(\d)/)?.[1];
+    return direct && +direct >= 2 && +direct <= 5 ? `iPad Air ${direct}` : "iPad Air";
   }
   if (has(/ipad\s*mini/)) {
-    const m = s.match(/ipad\s*mini\s*(?:\(|-|\s)*(\d)/)?.[1];
-    return m && +m >= 3 && +m <= 6 ? `iPad Mini ${m}` : null;
+    const gen = s.match(/ipad\s*mini.*?\b([3-6])(?:st|nd|rd|th)?\s*(?:gen|generation)\b/)?.[1];
+    if (gen) return `iPad Mini ${gen}`;
+    const direct = s.match(/ipad\s*mini\s*(?:\(|-|\s)*(\d)/)?.[1];
+    return direct && +direct >= 3 && +direct <= 6 ? `iPad Mini ${direct}` : null;
   }
   if (has(/\bipad\b/)) {
-    const gen = s.match(/(?:ipad[^\d]*)?(4|5|6|7|8|9|10)(?:st|nd|rd|th)?\s*(?:gen|generation)?\b/)?.[1];
-    return gen ? `iPad ${gen}` : null;
+    const gen = s.match(/\b(4|5|6|7|8|9|10)(?:st|nd|rd|th)\s*(?:gen|generation)\b/)?.[1]
+      ?? s.match(/\b(?:gen|generation)\s*(4|5|6|7|8|9|10)\b/)?.[1];
+    if (gen) return `iPad ${gen}`;
+    const direct = s.match(/\bipad\s+(4|5|6|7|8|9|10)\b(?![.,]\d)/)?.[1];
+    return direct ? `iPad ${direct}` : null;
   }
 
   if (has(/galaxy\s*watch\s*ultra/)) return "Samsung Galaxy Watch Ultra";
