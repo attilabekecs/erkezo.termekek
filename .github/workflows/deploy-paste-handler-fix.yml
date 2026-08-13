@@ -1,0 +1,59 @@
+name: Deploy paste handler fix
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-paste-fix
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Add reliable Cmd+V paste handler
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/page.tsx')
+          s = p.read_text()
+          old = '''            <textarea id="products" value={input} onChange={e => { setInput(e.target.value); setProcessed(false); }} placeholder={"Apple iPhone 15 Pro 128GB\\t3\\nApple iPad 10.2 8th Gen\\t1\\nXiaomi Poco X3 NFC\\t1"} spellCheck={false} />'''
+          new = '''            <textarea id="products" value={input} onChange={e => { setInput(e.target.value); setProcessed(false); }} onPaste={e => { e.preventDefault(); const pasted = e.clipboardData.getData("text/plain").replace(/\\r\\n?/g, "\\n").replace(/^\\s*\\n+|\\n+\\s*$/g, ""); const el = e.currentTarget; const start = el.selectionStart ?? input.length; const end = el.selectionEnd ?? start; const next = input.slice(0, start) + pasted + input.slice(end); setInput(next); setProcessed(false); requestAnimationFrame(() => { el.focus(); el.setSelectionRange(start, start + pasted.length); el.scrollTop = 0; el.scrollLeft = 0; }); }} placeholder={"Apple iPhone 15 Pro 128GB\\t3\\nApple iPad 10.2 8th Gen\\t1\\nXiaomi Poco X3 NFC\\t1"} spellCheck={false} />'''
+          if old not in s:
+              raise SystemExit('textarea target not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+
+      - name: Build static site
+        run: npm run build:pages
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./out
+
+      - name: Deploy GitHub Pages
+        uses: actions/deploy-pages@v4
