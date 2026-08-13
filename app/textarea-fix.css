@@ -1,0 +1,27 @@
+#products {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  text-shadow: 0 0 0 #ffffff !important;
+  caret-color: #20d8d0 !important;
+  opacity: 1 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: #061218 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+}
+
+#products:focus {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  text-shadow: 0 0 0 #ffffff !important;
+}
+
+#products::placeholder {
+  color: #668087 !important;
+  -webkit-text-fill-color: #668087 !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
