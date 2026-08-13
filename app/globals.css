@@ -23,9 +23,9 @@ h2 { font-size:32px; }
 .lead { color:#a5b5ba; font-size:clamp(14px, 1.2vw, 17px); line-height:1.45; margin:10px 0 clamp(12px, 2vh, 24px); max-width:740px; }
 label { display:block; color:#8da2a8; font-size:12px; font-weight:900; letter-spacing:.14em; margin-bottom:12px; }
 .editorWrap { position:relative; flex:1; min-height:120px; }
-textarea { width:100%; height:100%; min-height:120px; resize:none; color:#e9f7f7; background:#061218; border:1px solid var(--cyan); border-radius:10px; outline:none; padding:18px 54px 18px 20px; line-height:1.65; font-family:var(--font-geist-mono), ui-monospace, monospace; font-size:15px; box-shadow:inset 0 0 36px rgba(0,0,0,.25); }
-textarea:focus { box-shadow:0 0 0 3px rgba(32,216,208,.13), inset 0 0 36px rgba(0,0,0,.25); }
-textarea::placeholder { color:#668087; }
+textarea { width:100%; height:100%; min-height:120px; resize:none; color:#e9f7f7 !important; -webkit-text-fill-color:#e9f7f7 !important; caret-color:var(--cyan); opacity:1 !important; background:#061218; border:1px solid var(--cyan); border-radius:10px; outline:none; padding:18px 54px 18px 20px; line-height:1.65; font-family:var(--font-geist-mono), ui-monospace, monospace; font-size:15px; box-shadow:inset 0 0 36px rgba(0,0,0,.25); }
+textarea:focus { color:#e9f7f7 !important; -webkit-text-fill-color:#e9f7f7 !important; box-shadow:0 0 0 3px rgba(32,216,208,.13), inset 0 0 36px rgba(0,0,0,.25); }
+textarea::placeholder { color:#668087; -webkit-text-fill-color:#668087; opacity:1; }
 .clear { position:absolute; right:16px; top:12px; border:0; background:transparent; color:#d5e4e6; font-size:31px; font-weight:200; }
 .hint { color:#859aa0; font-size:12px; margin:8px 2px 14px; }
 .actions { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
@@ -38,6 +38,7 @@ button:disabled { cursor:not-allowed; opacity:.38; }
 .resultPanel { display:flex; flex-direction:column; gap:clamp(10px, 1.5vh, 18px); }
 .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
 .stats div { min-height:clamp(78px, 11vh, 108px); border:1px solid #28454d; border-radius:10px; background:linear-gradient(145deg,#10232b,#0b1b21); display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.stats div:last-child { display:none; }
 .stats small { color:var(--cyan); font-weight:900; letter-spacing:.08em; }
 .stats strong { font-size:clamp(30px, 3.2vw, 42px); margin-top:8px; line-height:1; }
 .empty { flex:1; min-height:120px; border:1px dashed #29474f; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#718b91; padding:20px; }
