@@ -1,0 +1,90 @@
+name: Deploy paste visibility fix
+
+on:
+  workflow_run:
+    workflows:
+      - Deploy textarea visibility fix
+    types:
+      - completed
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-paste-fix
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply textarea rendering and paste fixes
+        shell: python
+        run: |
+          from pathlib import Path
+
+          css = Path('app/globals.css')
+          css_text = css.read_text()
+          css_text += '''\n/* Chrome/Safari textarea rendering fallback */\n#products {\n  color: #f8ffff !important;\n  -webkit-text-fill-color: #f8ffff !important;\n  caret-color: #20d8d0 !important;\n  opacity: 1 !important;\n  -webkit-appearance: none;\n  appearance: none;\n  font-family: Arial, Helvetica, sans-serif !important;\n  text-shadow: 0 0 0 #f8ffff;\n}\n#products::selection { background: #20d8d0; color: #031417; -webkit-text-fill-color: #031417; }\n'''
+          css.write_text(css_text)
+
+          page = Path('app/page.tsx')
+          text = page.read_text()
+          old = '<textarea id="products" value={input} onChange={e => { setInput(e.target.value); setProcessed(false); }} placeholder={"Apple iPhone 15 Pro 128GB\\t3\\nApple iPad 10.2 8th Gen\\t1\\nXiaomi Poco X3 NFC\\t1"} spellCheck={false} />'
+          new = '''<textarea
+              id="products"
+              value={input}
+              onChange={e => { setInput(e.target.value); setProcessed(false); }}
+              onPaste={e => {
+                e.preventDefault();
+                const pasted = e.clipboardData.getData("text/plain")
+                  .replace(/\\r\\n?/g, "\\n")
+                  .replace(/^(?:[ \\t]*\\n)+/, "")
+                  .replace(/(?:\\n[ \\t]*)+$/, "");
+                setInput(pasted);
+                setProcessed(false);
+                requestAnimationFrame(() => {
+                  const target = e.currentTarget;
+                  target.scrollTop = 0;
+                  target.scrollLeft = 0;
+                  target.setSelectionRange(0, 0);
+                });
+              }}
+              placeholder={"Apple iPhone 15 Pro 128GB\\t3\\nApple iPad 10.2 8th Gen\\t1\\nXiaomi Poco X3 NFC\\t1"}
+              spellCheck={false}
+            />'''
+          if old not in text:
+              raise SystemExit('Expected textarea markup not found')
+          page.write_text(text.replace(old, new))
+
+      - name: Build static site
+        run: npm run build:pages
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./out
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
