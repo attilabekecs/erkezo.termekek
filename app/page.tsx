@@ -162,6 +162,7 @@ export default function Home() {
     const items: ReviewedItem[] = [];
     let validRows = 0;
     let units = 0;
+    let keptUnits = 0;
     input.split(/\r?\n/).forEach((line, index) => {
       const item = parseLine(line);
       if (!item) return;
@@ -169,11 +170,13 @@ export default function Home() {
       const mappingKey = clean(item.name);
       const category = assignments[mappingKey] || customMappings[mappingKey] || classify(item.name);
       items.push({ ...item, row: index + 1, category, mappingKey });
-      if (category) totals.set(category, (totals.get(category) ?? 0) + item.quantity);
-      else unknown.push({ ...item, row: index + 1, reason: "Nem található egyező kategória" });
+      if (category) {
+        totals.set(category, (totals.get(category) ?? 0) + item.quantity);
+        keptUnits += item.quantity;
+      } else unknown.push({ ...item, row: index + 1, reason: "Nem található egyező kategória" });
     });
     const results: Result[] = CATEGORIES.filter(c => totals.has(c)).map(category => ({ category, quantity: totals.get(category)! }));
-    return { results, unknown, items, validRows, units };
+    return { results, unknown, items, validRows, units, keptUnits };
   }, [input, customMappings, assignments]);
 
   const saveAssignments = () => {
@@ -231,7 +234,8 @@ export default function Home() {
           <div><p className="eyebrow">ÉLŐ EREDMÉNY</p><h2>Feldolgozás eredménye</h2></div>
           <div className="stats">
             <div><small>SOR</small><strong>{processed ? parsed.validRows : 0}</strong></div>
-            <div><small>DB</small><strong>{processed ? parsed.units : 0}</strong></div>
+            <div><small>FELTÖLTVE</small><strong>{processed ? parsed.units : 0}</strong></div>
+            <div><small>MEGMARAD</small><strong>{processed ? parsed.keptUnits : 0}</strong></div>
             <div><small>KATEGÓRIA</small><strong>{processed ? parsed.results.length : 0}</strong></div>
           </div>
           {!processed ? <div className="empty"><span>⌁</span><h3>Az eredmény itt jelenik meg</h3><p>Illeszd be a listát, majd kattints a feldolgozásra.</p></div> : (
