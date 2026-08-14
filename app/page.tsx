@@ -223,7 +223,7 @@ export default function Home() {
           <div><p className="eyebrow">KÉSZLETSEGÉD</p><h1>Érkező termékek összesítő</h1><p className="lead">Másold be a termékneveket és darabszámokat, az oldal a megadott kategóriák szerint összesít.</p></div>
           <label htmlFor="products">ÉRKEZŐ TERMÉKEK</label>
           <div className="editorWrap">
-            <textarea id="products" value={input} onChange={e => { setInput(e.target.value); setProcessed(false); }} placeholder={"Apple iPhone 15 Pro 128GB\t3\nApple iPad 10.2 8th Gen\t1\nXiaomi Poco X3 NFC\t1"} spellCheck={false} />
+            <textarea id="products" value={input} onChange={e => { setInput(e.target.value); setProcessed(false); }} onPaste={e => { e.preventDefault(); const pasted = e.clipboardData.getData("text/plain").replace(/\r\n?/g, "\n"); const el = e.currentTarget; const start = el.selectionStart ?? input.length; const end = el.selectionEnd ?? start; const next = input.slice(0, start) + pasted + input.slice(end); setInput(next); setProcessed(false); requestAnimationFrame(() => { el.focus(); const cursor = start + pasted.length; el.setSelectionRange(cursor, cursor); el.scrollTop = 0; el.scrollLeft = 0; }); }} placeholder={"Apple iPhone 15 Pro 128GB\t3\nApple iPad 10.2 8th Gen\t1\nXiaomi Poco X3 NFC\t1"} spellCheck={false} />
             {input && <button className="clear" onClick={() => { setInput(""); setProcessed(false); }} aria-label="Beviteli mező törlése">×</button>}
           </div>
           <p className="hint">Excelből két oszlop is beilleszthető: terméknév és darabszám. Soronként egy termék.</p>
