@@ -1,0 +1,69 @@
+name: One-time fix iPhone 6 family
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one-time-fix-iphone6.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - name: Patch classifier and categories
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('app/page.tsx')
+          s = p.read_text()
+
+          old_categories = '  "iPhone 6", "iPhone 6s", "iPhone 7", "iPhone 7 Plus", "iPhone 8", "iPhone 8 Plus",'
+          new_categories = '  "iPhone 6", "iPhone 6 Plus", "iPhone 6s", "iPhone 6s Plus", "iPhone 7", "iPhone 7 Plus", "iPhone 8", "iPhone 8 Plus",'
+          if old_categories not in s:
+              raise SystemExit('Category anchor not found')
+          s = s.replace(old_categories, new_categories, 1)
+
+          old_classifier = '''  if (has(/iphone\\s*6\\s*s\\b|iphone\\s*6s\\b/)) return "iPhone 6s";
+          for (const model of [8, 7, 6]) {
+            const pattern = model === 6 ? /iphone\\s*6(?!\\s*s\\b|s\\b|\\d)/ : new RegExp(`iphone\\\\s*${model}(?!\\\\d)`);
+            if (has(pattern)) return has(/\\bplus\\b/) ? `iPhone ${model} Plus` : `iPhone ${model}`;
+          }'''
+          new_classifier = '''  if (has(/iphone\\s*6\\s*s\\s*plus\\b|iphone\\s*6s\\s*plus\\b/)) return "iPhone 6s Plus";
+          if (has(/iphone\\s*6\\s*s\\b|iphone\\s*6s\\b/)) return "iPhone 6s";
+          if (has(/iphone\\s*6\\s*plus\\b/)) return "iPhone 6 Plus";
+          if (has(/iphone\\s*6(?!\\s*s\\b|s\\b|\\d)/)) return "iPhone 6";
+          for (const model of [8, 7]) {
+            const pattern = new RegExp(`iphone\\\\s*${model}(?!\\\\d)`);
+            if (has(pattern)) return has(/\\bplus\\b/) ? `iPhone ${model} Plus` : `iPhone ${model}`;
+          }'''
+          if old_classifier not in s:
+              raise SystemExit('Classifier anchor not found')
+          s = s.replace(old_classifier, new_classifier, 1)
+
+          old_logic = '''      if (category) {
+            totals.set(category, (totals.get(category) ?? 0) + item.quantity);
+            keptUnits += item.quantity;
+          } else unknown.push({ ...item, row: index + 1, reason: "Nem található egyező kategória" });'''
+          new_logic = '''      if (category && CATEGORIES.includes(category as typeof CATEGORIES[number])) {
+            totals.set(category, (totals.get(category) ?? 0) + item.quantity);
+            keptUnits += item.quantity;
+          } else unknown.push({ ...item, row: index + 1, reason: category ? `Nem exportálható kategória: ${category}` : "Nem található egyező kategória" });'''
+          if old_logic not in s:
+              raise SystemExit('Kept-units anchor not found')
+          s = s.replace(old_logic, new_logic, 1)
+
+          p.write_text(s)
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/page.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m "Fix iPhone 6 family categorization and export count"
+          git push origin main
