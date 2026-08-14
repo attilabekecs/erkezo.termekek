@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 
 const CATEGORIES = [
-  "iPhone 6", "iPhone 6s", "iPhone 7", "iPhone 7 Plus", "iPhone 8", "iPhone 8 Plus",
+  "iPhone 6", "iPhone 6 Plus", "iPhone 6s", "iPhone 6s Plus", "iPhone 7", "iPhone 7 Plus", "iPhone 8", "iPhone 8 Plus",
   "iPhone SE 2016", "iPhone SE (2020)", "iPhone SE (2022)", "iPhone X", "iPhone XR", "iPhone XS", "iPhone XS Max",
   "iPhone 11", "iPhone 11 Pro", "iPhone 11 Pro Max", "iPhone 12 Mini", "iPhone 12", "iPhone 12 Pro", "iPhone 12 Pro Max",
   "iPhone 13 Mini", "iPhone 13", "iPhone 13 Pro", "iPhone 13 Pro Max", "iPhone 14", "iPhone 14 Plus", "iPhone 14 Pro", "iPhone 14 Pro Max",
@@ -44,9 +44,12 @@ function classify(raw: string): string | null {
     if (has(/\bmini\b/)) return `iPhone ${model} Mini`;
     return `iPhone ${model}`;
   }
+  if (has(/iphone\s*6\s*s\s*plus\b|iphone\s*6s\s*plus\b/)) return "iPhone 6s Plus";
   if (has(/iphone\s*6\s*s\b|iphone\s*6s\b/)) return "iPhone 6s";
-  for (const model of [8, 7, 6]) {
-    const pattern = model === 6 ? /iphone\s*6(?!\s*s\b|s\b|\d)/ : new RegExp(`iphone\\s*${model}(?!\\d)`);
+  if (has(/iphone\s*6\s*plus\b/)) return "iPhone 6 Plus";
+  if (has(/iphone\s*6(?!\s*s\b|s\b|\d)/)) return "iPhone 6";
+  for (const model of [8, 7]) {
+    const pattern = new RegExp(`iphone\\s*${model}(?!\\d)`);
     if (has(pattern)) return has(/\bplus\b/) ? `iPhone ${model} Plus` : `iPhone ${model}`;
   }
   if (has(/iphone\s*xs\s*max/)) return "iPhone XS Max";
@@ -170,10 +173,10 @@ export default function Home() {
       const mappingKey = clean(item.name);
       const category = assignments[mappingKey] || customMappings[mappingKey] || classify(item.name);
       items.push({ ...item, row: index + 1, category, mappingKey });
-      if (category) {
+      if (category && CATEGORIES.includes(category as typeof CATEGORIES[number])) {
         totals.set(category, (totals.get(category) ?? 0) + item.quantity);
         keptUnits += item.quantity;
-      } else unknown.push({ ...item, row: index + 1, reason: "Nem található egyező kategória" });
+      } else unknown.push({ ...item, row: index + 1, reason: category ? `Nem exportálható kategória: ${category}` : "Nem található egyező kategória" });
     });
     const results: Result[] = CATEGORIES.filter(c => totals.has(c)).map(category => ({ category, quantity: totals.get(category)! }));
     return { results, unknown, items, validRows, units, keptUnits };
